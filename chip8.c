@@ -67,6 +67,7 @@ void chip8_execute_cycle(Chip8 *chip8){
     chip8->pc += 2;
 
     //all comments for functions and what they do come from cowgods manual
+    //literal copy paste from the docs
 
     //check what the first 4bits are
     switch (opcode & 0xF000)
