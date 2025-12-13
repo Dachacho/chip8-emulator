@@ -33,6 +33,7 @@ void chip8_init(Chip8 *chip8){
     memset(chip8->display, 0, DISPLAY_HEIGHT*DISPLAY_WIDTH);
     memset(chip8->keypad, 0, KEYPAD_SIZE);
     memset(chip8->stack, 0, STACK_SIZE);
+    memset(chip8->V, 0, NUM_REGISTERS);
 
     /*
     fontset starts from the memory address 0x50
@@ -61,6 +62,9 @@ void chip8_load_rom(Chip8 *chip8, const char *filename){
 }
 
 void chip8_execute_cycle(Chip8 *chip8){
+    //for calculations later on
+    unsigned short sum;
+    //for easy opcode parsing later on
     unsigned char X, Y, kk, n;
 	unsigned short nnn;
     //load high bits from pc and low bits from pc+1
@@ -120,6 +124,60 @@ void chip8_execute_cycle(Chip8 *chip8){
     case 0x6000:
         chip8->V[X] = kk;
         break;
+    //7xkk - ADD Vx, kk (set Vx = Vx + kk)
+    case 0x7000:
+        chip8->V[X] += kk;
+        break;
+    case 0x8000:
+        switch(n){
+            //8xy0 - LD Vx, Vy (set Vx = Vy)
+            case 0x0000:
+                chip8->V[X] = chip8->V[Y];
+                break;
+            //8xy1 - OR Vx, Vy (Vx or Vy)
+            case 0x0001:
+                chip8->V[X] = chip8->V[X] | chip8->V[Y];
+                break;
+            //8xy2 - AND Vx, Vy (Vx and Vy)
+            case 0x0002:
+                chip8->V[X] = chip8->V[X] & chip8->V[Y];
+                break;
+            //8xy3 - XOR Vx, Vy (Vx xor Vy)
+            case 0x0003:
+                chip8->V[X] = chip8->V[X] ^ chip8->V[Y];
+                break;
+            //8xy4 - ADD Vx, Vy (with carry)
+            case 0x0004:
+                sum = chip8->V[X] + chip8->V[Y];
+                //this checks for overflow over 255 and sets carry in the flag
+                chip8->V[0xF] = (sum > 0xFF)? 1 : 0;
+                chip8->V[X] = sum & 0xFF;
+                break;
+            //8xy5 - SUB Vx, Vy
+            case 0x0005:
+                chip8->V[0xF] = (chip8->V[X] > chip8->V[Y])? 1 : 0;
+                chip8->V[X] = chip8->V[X] - chip8->V[Y];
+                break;
+            //8xy6 - SHR Vx, {, Vy} (Set Vx = Vx SHR 1) (SHR - shift right)
+            case 0x0006:
+                chip8->V[0xF] = chip8->V[X] & 0x1;
+                chip8->V[X] >>= 1;
+                break;
+            //8xy7 - SUBN (set Vx = Vy - Vx)
+            case 0x0007:
+                chip8->V[0xF] = (chip8->V[Y] > chip8->V[X])? 1 : 0;
+                chip8->V[X] = chip8->V[Y] - chip8->V[X];
+                break;
+            //8xyE - SHL - shift left save deleted bit in VF
+            case 0x000E:
+                printf("Before SHL: V[X] = 0x%02X\n", chip8->V[X]);
+                chip8->V[0xF] = (chip8->V[X] >> 7) & 0x1; //shift 7 bits to get MSB
+                printf("Carry (MSB): V[0xF] = %d\n", chip8->V[0xF]);
+                chip8->V[X] <<= 1;
+                printf("After SHL: V[X] = 0x%02X\n", chip8->V[X]);
+                break;   
+        }
+        break;
     
     default:
         break;
@@ -130,5 +188,4 @@ int main() {
     Chip8 chip8;
 
     chip8_init(&chip8);
-    
 }
