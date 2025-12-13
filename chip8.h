@@ -10,6 +10,8 @@
 #define DISPLAY_HEIGHT 32
 #define FONTSET_SIZE 80
 #define KEYPAD_SIZE 16
+//starting address (512 bits) before this is where the interpreter lives
+#define START_ADDR 0x200
 
 typedef struct{
     //is the memory of the chip
@@ -43,8 +45,6 @@ typedef struct{
 
 //initialize the chip, clear memory, set pc...
 void chip8_init(Chip8 *chip8);
-//load chip8 fontset into memory array
-void chip8_load_fontset(Chip8 *chip8);
 //load rom file into memory array
 void chip8_load_rom(Chip8 *chip8, const char *filename);
 //execute single cycle (fetch, decode, execute)
