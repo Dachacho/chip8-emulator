@@ -61,10 +61,18 @@ void chip8_load_rom(Chip8 *chip8, const char *filename){
 }
 
 void chip8_execute_cycle(Chip8 *chip8){
+    unsigned char X, Y, kk, n;
+	unsigned short nnn;
     //load high bits from pc and low bits from pc+1
     unsigned short opcode = chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc+1];
     //plus 2 every cycle (because we use +1 too)
     chip8->pc += 2;
+    //extract out all the opcode operations to not have to repeat it every time
+    X = (opcode & 0x0F00) >> 8;
+	Y = (opcode & 0x00F0) >> 4;
+	nnn = (opcode & 0x0FFF);
+	kk = (opcode & 0x00FF);
+	n = (opcode & 0x000F);
 
     //all comments for functions and what they do come from cowgods manual
     //literal copy paste from the docs
@@ -75,26 +83,42 @@ void chip8_execute_cycle(Chip8 *chip8){
     case 0x0000:
         //if its 0 there could be 2 calls
         switch(opcode & 0x00FF){
-            //CLS (clear screen)
+            //00E0 - CLS (clear screen)
             case 0x00E0:
                 memset(chip8->display, 0, DISPLAY_HEIGHT*DISPLAY_WIDTH);
                 break;
-            //RET (return from a subroutine)
+            //00EE - RET (return from a subroutine)
             case 0x00EE:
                 chip8->sp--;
                 chip8->pc = chip8->stack[chip8->sp];
                 break;
         }
         break;
-    //JP addr (jump to nnn - last 12 bits)
+    //1nnn - JP addr (jump to nnn - last 12 bits)
     case 0x1000:
-        chip8->pc = opcode & 0x0FFF;
+        chip8->pc = nnn;
         break;
-    //CALL addr (call subroutine at nnn)
+    //2nnn - CALL addr (call subroutine at nnn)
     case 0x2000:
         chip8->stack[chip8->sp] = chip8->pc;
         chip8->sp++;
-        chip8->pc = opcode & 0x0FFF;
+        chip8->pc = nnn;
+        break;
+    //3xkk - SE Vx, byte (skip next instruction if Vx == kk)
+    case 0x3000:
+        if(chip8->V[X] == kk) chip8->pc += 2;
+        break;
+    //4xkk - SNE Vx, byte (skip next instruction if Vx != kk)
+    case 0x4000:
+        if(chip8->V[X] != kk) chip8->pc += 2;
+        break;
+    //5xy0 - SE Vx, Vy (skip next instruction if Vx == Vy)
+    case 0x5000:
+        if(chip8->V[X] == chip8->V[Y]) chip8->pc += 2;
+        break;
+    //6xkk - LD Vx, kk (set Vx = kk)
+    case 0x6000:
+        chip8->V[X] = kk;
         break;
     
     default:
@@ -106,33 +130,5 @@ int main() {
     Chip8 chip8;
 
     chip8_init(&chip8);
-
-    chip8.memory[0x200] = 0x21;
-    chip8.memory[0x201] = 0x00;
-    chip8.memory[0x100] = 0x00;
-    chip8.memory[0x101] = 0xEE;
-
-    chip8.pc = START_ADDR;
-
-    // execute the CALL instruction
-    chip8_execute_cycle(&chip8);
-
-    // verify
-    if (chip8.pc == 0x100 && chip8.sp == 1 && chip8.stack[0] == 0x202) {
-        printf("Test Case 1 Passed: CALL pushed pc to stack and jumped to 0x100.\n");
-    } else {
-        printf("Test Case 1 Failed: pc = 0x%03X, sp = %d, stack[0] = 0x%03X (expected pc = 0x100, sp = 1, stack[0] = 0x202).\n",
-               chip8.pc, chip8.sp, chip8.stack[0]);
-    }
-
-    // execute the RET instruction
-    chip8_execute_cycle(&chip8);
-
-    // verify
-    if (chip8.pc == 0x202 && chip8.sp == 0) {
-        printf("Test Case 2 Passed: RET restored pc to 0x202 and decremented sp.\n");
-    } else {
-        printf("Test Case 2 Failed: pc = 0x%03X, sp = %d (expected pc = 0x202, sp = 0).\n",
-               chip8.pc, chip8.sp);
-    }
+    
 }
