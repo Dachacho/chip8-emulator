@@ -53,23 +53,22 @@ void chip8_load_rom(Chip8 *chip8, const char *filename){
     fclose(fp);
 }
 
+void chip8_execute_cycle(Chip8 *chip8){
+    unsigned short opcode = chip8->memory[chip8->pc] << 8 | chip8->memory[chip8->pc+1];
+
+    chip8->pc += 2;
+}
+
 int main(){
     Chip8 chip8;
 
     chip8_init(&chip8);
-    chip8_load_rom(&chip8, "dummy.rom");
+    //test fetching
+    chip8.memory[0x200] = 0x12; // High byte of opcode
+    chip8.memory[0x201] = 0x34; // Low byte of opcode
 
-    printf("memory at 0x50 (fontset):\n");
-    for(int i = 0x50; i < 0x50 + FONTSET_SIZE; i++){
-        printf("0x%02X", chip8.memory[i]);
-        if ((i - 0x50 + 1) % 5 == 0){
-            printf("\n");   
-        } 
-    }
+    chip8.pc = START_ADDR;
 
-    printf("memory at START_ADDR (first 8 bytes):\n");
-    for(int i = START_ADDR; i < START_ADDR + 8; i++){
-        printf("0x%02X", chip8.memory[i]);
-    }
-    printf("\n");
+    // Execute one cycle
+    chip8_execute_cycle(&chip8);
 }
