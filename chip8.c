@@ -279,6 +279,8 @@ void chip8_execute_cycle(Chip8 *chip8){
             case 0x0029:
                 chip8->I = FONT_ADDR + (chip8->V[X] * 5);
                 break;
+            //Fx33 - LD B, Vx (store BCD representation of Vx in memory locations I, I+1, and I+2)
+            //example 156 (or in the test 0x9C) - I = 1 | I+1 = 5 | I+2 = 6
             case 0x0033:
                 vX = chip8->V[X];
                 chip8->memory[chip8->I+2] = vX % 10;
