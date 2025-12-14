@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 const unsigned char fontset[FONTSET_SIZE] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -62,8 +63,13 @@ void chip8_load_rom(Chip8 *chip8, const char *filename){
 }
 
 void chip8_execute_cycle(Chip8 *chip8){
+    //x and y storage for drawing later
+    unsigned char x_loc, y_loc, height, pixel;
+    //for for loops
+    int yline, xline, screen_x, screen_y, index;
     //for calculations later on
     unsigned short sum;
+
     //for easy opcode parsing later on
     unsigned char X, Y, kk, n;
 	unsigned short nnn;
@@ -170,15 +176,56 @@ void chip8_execute_cycle(Chip8 *chip8){
                 break;
             //8xyE - SHL - shift left save deleted bit in VF
             case 0x000E:
-                printf("Before SHL: V[X] = 0x%02X\n", chip8->V[X]);
                 chip8->V[0xF] = (chip8->V[X] >> 7) & 0x1; //shift 7 bits to get MSB
-                printf("Carry (MSB): V[0xF] = %d\n", chip8->V[0xF]);
                 chip8->V[X] <<= 1;
-                printf("After SHL: V[X] = 0x%02X\n", chip8->V[X]);
                 break;   
         }
         break;
-    
+    //9xy0 - SNE Vx, Vy (if Vx != Vy skip instruction)
+    case 0x9000:
+        if(chip8->V[X] != chip8->V[Y]) chip8->pc += 2;
+        break;
+    //Annn - LD I, addr (set I = nnn)
+    case 0xA000:
+        chip8->I = nnn;
+        break;
+    //Bnnn - JP V0, addr (jump to nnn + V0)
+    //set pc to nnn plus value of V0
+    case 0xB000:
+        chip8->pc = nnn + chip8->V[0x0];
+        break;
+    //Cxkk - RND Vx, kk (set Vx = rand byte AND kk)
+    case 0xC000:
+        chip8->V[X] = (rand() % 256) & kk;
+        break;
+    //Dxyn - DRW Vx, Vy, nibble 
+    //(display n-byte sprite starting at address I at (Vx, Vy) set VF = collision)
+    case 0xD000:
+        x_loc = chip8->V[X];
+        y_loc = chip8->V[Y];
+        height = n;
+        pixel = 0;
+
+        chip8->V[0xF] = 0;
+
+        for (yline = 0; yline < height; yline++){
+            pixel = chip8->memory[chip8->I + yline];
+            for(xline = 0; xline < 8; xline++){
+                if((pixel & (0x80 >> xline)) != 0){
+                    screen_x = (x_loc + xline) % 64;
+                    screen_y = (y_loc + yline) % 32;
+                    index = screen_x + (screen_y * 64);
+                }
+
+                if(chip8->display[index] == 1){
+                    chip8->V[0xF] = 1;
+                }
+
+                chip8->display[index] ^= 1;
+            }
+        }
+        break;
+
     default:
         break;
     }
@@ -188,4 +235,13 @@ int main() {
     Chip8 chip8;
 
     chip8_init(&chip8);
+
+    chip8.V[0x0] = 0x01;
+    chip8.memory[0x200] = 0xB1;
+    chip8.memory[0x201] = 0x11;
+
+    chip8_execute_cycle(&chip8);
+    if(chip8.pc == 0x112){
+        printf("passed");
+    }
 }
