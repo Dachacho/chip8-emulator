@@ -12,6 +12,7 @@
 #define KEYPAD_SIZE 16
 //starting address (512 bits) before this is where the interpreter lives
 #define START_ADDR 0x200
+#define FONT_ADDR 0x50
 
 typedef struct{
     //is the memory of the chip

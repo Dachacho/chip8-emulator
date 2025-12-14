@@ -36,11 +36,8 @@ void chip8_init(Chip8 *chip8){
     memset(chip8->stack, 0, STACK_SIZE);
     memset(chip8->V, 0, NUM_REGISTERS);
 
-    /*
-    fontset starts from the memory address 0x50
-    we copy fontset into the memory of our chip
-    */
-    memcpy(&chip8->memory[0x50], fontset, FONTSET_SIZE);
+    //we copy fontset into the memory of our chip
+    memcpy(&chip8->memory[FONT_ADDR], fontset, FONTSET_SIZE);
 }
 
 void chip8_load_rom(Chip8 *chip8, const char *filename){
@@ -65,8 +62,12 @@ void chip8_load_rom(Chip8 *chip8, const char *filename){
 void chip8_execute_cycle(Chip8 *chip8){
     //x and y storage for drawing later
     unsigned char x_loc, y_loc, height, pixel;
-    //for for loops
+    //for loops in drawing
     int yline, xline, screen_x, screen_y, index;
+    //for input check
+    int key_pressed, i;
+    //for coversion
+    unsigned char vX;
     //for calculations later on
     unsigned short sum;
 
@@ -225,7 +226,70 @@ void chip8_execute_cycle(Chip8 *chip8){
             }
         }
         break;
+    case 0xE000:
+        //here kk is used to match last 2 in the hex
+        switch(kk){
+            //Ex9E - SKP Vx (skip next instruction if key with the value of Vx is pressed)
+            case 0x009E:
+                if(chip8->keypad[chip8->V[X]] == 1) chip8->pc += 2;
+                break;
+            //ExA1 - SKNP Vx (skip next instruction if key with the value of Vx is not pressed)
+            case 0x00A1:
+                if(chip8->keypad[chip8->V[X]] != 1) chip8->pc += 2;
+                break;
+        }
+        break;
+    case 0xF000:
+        //same way here kk matches last 2 hex digits
+        switch(kk){
+            //Fx07 - LD Vx, DT (load delay timer in Vx)
+            case 0x0007:
+                chip8->V[X] = chip8->delay_timer;
+                break;
+            //Fx0A - LD Vx, K (wait for a key press store the value of the key in Vx)
+            case 0x000A:
+                key_pressed = 0;
+                //check every key if any were pressed
+                for(i = 0; i < 16; i++){
+                    if(chip8->keypad[i] == 1){
+                        chip8->V[X] = i;
+                        key_pressed = 1;
+                        break;
+                    }
+                }
 
+                //if none were pressed then decrement by 2 to get this opcode again
+                if(!key_pressed){
+                    chip8->pc -= 2;
+                }
+                break;
+            //Fx15 - LD DT, Vx (set delay_timer = Vx)
+            case 0x0015:
+                chip8->delay_timer = chip8->V[X];
+                break;
+            //Fx15 - LD ST, Vx (set sound_timer = Vx)
+            case 0x0018:
+                chip8->sound_timer = chip8->V[X];
+                break;
+            //Fx1E - ADD I, Vx (set I = I + Vx)
+            case 0x001E:
+                chip8->I += chip8->V[X];
+                break;
+            //Fx29 - LD F, Vx (set I = location of sprite for digit Vx)
+            case 0x0029:
+                chip8->I = FONT_ADDR + (chip8->V[X] * 5);
+                break;
+            case 0x0033:
+                vX = chip8->V[X];
+                chip8->memory[chip8->I+2] = vX % 10;
+                vX -= chip8->memory[chip8->I+2];
+                chip8->memory[chip8->I+1] = (vX % 100)/10;
+                vX -= chip8->memory[chip8->I+1];
+                chip8->memory[chip8->I] = (vX % 1000)/100;
+                vX -= chip8->memory[chip8->I];
+                break;
+        }
+        break;
     default:
         break;
     }
@@ -236,12 +300,12 @@ int main() {
 
     chip8_init(&chip8);
 
-    chip8.V[0x0] = 0x01;
-    chip8.memory[0x200] = 0xB1;
-    chip8.memory[0x201] = 0x11;
+    chip8.V[0x0] = 0x9C;
+    chip8.memory[0x200] = 0xF0;
+    chip8.memory[0x201] = 0x33;
 
     chip8_execute_cycle(&chip8);
-    if(chip8.pc == 0x112){
-        printf("passed");
-    }
+    printf("I register: %d", chip8.memory[chip8.I]);
+    printf("I register: %d", chip8.memory[chip8.I+1]);
+    printf("I register: %d", chip8.memory[chip8.I+2]);
 }
