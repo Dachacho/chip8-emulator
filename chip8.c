@@ -290,6 +290,18 @@ void chip8_execute_cycle(Chip8 *chip8){
                 chip8->memory[chip8->I] = (vX % 1000)/100;
                 vX -= chip8->memory[chip8->I];
                 break;
+            //Fx55 - LD [I], Vx - (Store registers V0 through Vx in memory starting at location I.)
+            case 0x0055:
+                for (i = 0; i <= X; i++){
+                    chip8->memory[chip8->I + i] = chip8->V[i];
+                }
+                break;
+            //Fx65 - LD Vx, [I] Read registers V0 through Vx from memory starting at location I.
+            case 0x0065:
+                for (i = 0; i <= X; i++){
+                    chip8->V[i] = chip8->memory[chip8->I + i];
+                }
+                break;
         }
         break;
     default:
