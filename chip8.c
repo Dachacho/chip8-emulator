@@ -308,18 +308,3 @@ void chip8_execute_cycle(Chip8 *chip8){
         break;
     }
 }
-
-int main() {
-    Chip8 chip8;
-
-    chip8_init(&chip8);
-
-    chip8.V[0x0] = 0x9C;
-    chip8.memory[0x200] = 0xF0;
-    chip8.memory[0x201] = 0x33;
-
-    chip8_execute_cycle(&chip8);
-    printf("I register: %d", chip8.memory[chip8.I]);
-    printf("I register: %d", chip8.memory[chip8.I+1]);
-    printf("I register: %d", chip8.memory[chip8.I+2]);
-}
