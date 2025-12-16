@@ -216,13 +216,13 @@ void chip8_execute_cycle(Chip8 *chip8){
                     screen_x = (x_loc + xline) % 64;
                     screen_y = (y_loc + yline) % 32;
                     index = screen_x + (screen_y * 64);
-                }
 
-                if(chip8->display[index] == 1){
-                    chip8->V[0xF] = 1;
-                }
+                    if(chip8->display[index] == 1){
+                        chip8->V[0xF] = 1;
+                    }
 
-                chip8->display[index] ^= 1;
+                    chip8->display[index] ^= 1;
+                }
             }
         }
         break;
@@ -277,7 +277,7 @@ void chip8_execute_cycle(Chip8 *chip8){
                 break;
             //Fx29 - LD F, Vx (set I = location of sprite for digit Vx)
             case 0x0029:
-                chip8->I = FONT_ADDR + (chip8->V[X] * 5);
+                chip8->I = FONT_ADDR + ((chip8->V[X] & 0x0F )* 5);
                 break;
             //Fx33 - LD B, Vx (store BCD representation of Vx in memory locations I, I+1, and I+2)
             //example 156 (or in the test 0x9C) - I = 1 | I+1 = 5 | I+2 = 6

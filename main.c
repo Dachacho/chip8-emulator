@@ -1,6 +1,5 @@
 #include "chip8.h"
 #include <stdio.h>
-#include <time.h>
 #include <string.h>
 #include <SDL2/SDL.h>
 
@@ -19,6 +18,19 @@ void draw_display(Chip8 *chip8){
         printf("\n");
     }
     fflush(stdout);
+}
+
+void update_texture(Chip8 *chip8, SDL_Texture *texture){
+    uint32_t pixels[DISPLAY_WIDTH * DISPLAY_HEIGHT];
+
+    uint32_t fg_color = 0xFFFFFFFF;  // white (foreground - pixel ON)
+    uint32_t bg_color = 0x00000000;  // black (background - pixel OFF)
+
+    for (int i = 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++) {
+        pixels[i] = chip8->display[i] ? fg_color : bg_color;
+    }
+
+    SDL_UpdateTexture(texture, NULL, pixels, DISPLAY_WIDTH * sizeof(uint32_t));
 }
 
 void handle_input(Chip8 *chip8, SDL_Event *event){
@@ -55,8 +67,13 @@ SDL_Scancode keymap[16] = {
 }
 
 int main(){
+    int i;
     struct timespec start_time, current_time;
     long elapsed_ms;
+
+    static int frame = 0;
+    
+
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -77,44 +94,47 @@ int main(){
 
     chip8_init(&chip8);
 
-    chip8_load_rom(&chip8, "test_opcode.ch8");
-
-    // clock_gettime(CLOCK_MONOTONIC, &start_time);
-    // while(1){
-    //     chip8_execute_cycle(&chip8);
-
-    //     clock_gettime(CLOCK_MONOTONIC, &current_time);
-
-    //     long elapsed_ms = ((current_time.tv_sec - start_time.tv_sec) * 1000)
-    //                     + ((current_time.tv_nsec - start_time.tv_nsec) / 1000000);
-        
-    //     if(elapsed_ms >= 16){
-    //         if(chip8.delay_timer > 0){
-    //             chip8.delay_timer--;
-    //         }
-
-    //         if(chip8.sound_timer > 0){
-    //             chip8.sound_timer--;
-    //             if(chip8.sound_timer == 0){
-    //                 printf("\a");
-    //             }
-    //         }
-    //     }
-    // }
+    chip8_load_rom(&chip8, "Pong (1 player).ch8");
 
     SDL_Event event;
     int running = 1;
     while (running) {
+        frame++;
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = 0;
             }
             handle_input(&chip8, &event);
         }
+
+        if (frame % 60 == 0) {
+            printf("Frame %d - PC: 0x%03X\n", frame, chip8.pc);
+        fflush(stdout);
+}
+
+        //run the loop 10 times to get 600MHz cpu
+        for(i = 0; i < 10; i++){
+            chip8_execute_cycle(&chip8);
+        }
+
+        if (chip8.delay_timer > 0) chip8.delay_timer--;
+        if (chip8.sound_timer > 0) {
+            chip8.sound_timer--;
+        if (chip8.sound_timer == 0) printf("\a");
+        }
+
+        update_texture(&chip8, texture);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+
         SDL_Delay(16); // ~60 FPS
     }
     
     // Cleanup
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
     return 0;
