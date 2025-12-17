@@ -3,23 +3,6 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
-void draw_display(Chip8 *chip8){
-    int y, x;
-
-    printf("\033[H\033[J");
-    for (y = 0; y < DISPLAY_HEIGHT; y++){
-        for (x = 0; x < DISPLAY_WIDTH; x++){
-            if (chip8->display[x + (y * DISPLAY_WIDTH)] == 1){
-                printf("█");
-            }else{
-                printf(" ");
-            }
-        }
-        printf("\n");
-    }
-    fflush(stdout);
-}
-
 void update_texture(Chip8 *chip8, SDL_Texture *texture){
     uint32_t pixels[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 
