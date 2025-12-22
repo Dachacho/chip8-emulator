@@ -6,6 +6,14 @@ LANGUAGE : C
 PLATFORM : macOS / Linux / Windows (with SDL2)
 
 ================================================================================
+INTRO
+================================================================================
+This is a toy project made because I just wanted to get used to C programming.
+It turned out to be so much more and also taught me about CPU architechture and 
+memory managment.
+
+I really do recommend to do this project if you want to have loads of fun.
+================================================================================
 DESCRIPTION
 ================================================================================
 
