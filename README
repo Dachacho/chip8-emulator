@@ -1,0 +1,79 @@
+================================================================================
+CHIP-8 EMULATOR v1.0
+================================================================================
+
+LANGUAGE : C
+PLATFORM : macOS / Linux / Windows (with SDL2)
+
+================================================================================
+DESCRIPTION
+================================================================================
+
+This is a CHIP-8 interpreter/emulator written in C. CHIP-8 is an interpreted
+programming language developed in the mid-1970s. It was made to allow video
+games to be more easily programmed for 8-bit microcomputers.
+
+The emulator implements the full CHIP-8 instruction set and features:
+
+    * 4KB RAM
+    * 16 8-bit registers (V0-VF)
+    * 16-level stack
+    * 64x32 pixel monochrome display
+    * 16-key hexadecimal keypad
+    * Delay and sound timers
+    * 35 opcodes
+
+================================================================================
+REQUIREMENTS
+================================================================================
+
+    * C compiler (gcc, clang, etc.)
+    * SDL2 library for graphics and input
+
+================================================================================
+COMPILATION
+================================================================================
+
+On macOS/Linux:
+
+    $ gcc -o chip8 main.c chip8.c -lSDL2
+
+On Linux (alternative):
+
+    $ gcc -o chip8 main.c chip8.c `sdl2-config --cflags --libs`
+
+================================================================================
+CONTROLS
+================================================================================
+
+CHIP-8 uses a 16-key hexadecimal keypad with the following layout:
+
+    Original CHIP-8 Keypad:        This Emulator Mapping:
+
+         1 2 3 C                        1 2 3 4
+         4 5 6 D                        Q W E R
+         7 8 9 E                        A S D F
+         A 0 B F                        Z X C V
+
+================================================================================
+FILE STRUCTURE
+================================================================================
+
+    chip8.h         - Header file with structure definitions
+    chip8.c         - Core emulator implementation (opcodes, CPU)
+    main.c          - SDL2 frontend and main loop
+    README          - This file
+
+================================================================================
+NOTES
+================================================================================
+
+- ROMs should be placed in the same directory as the executable
+- Display refreshes at 60Hz
+- Timers count down at 60Hz
+- The interpreter space (0x000-0x1FF) contains the font set
+- Programs start at memory address 0x200
+
+=========================================================================
+
+================================================================================
